@@ -1,151 +1,189 @@
 # API Integration Troubleshooting Lab
 
+A small lab environment for reproducing and diagnosing common API
+integration failures such as authentication errors, malformed XML
+payloads, and incorrect request headers.
+
+The repository includes a mock Flask API, example XML payloads, a
+Postman collection, and a Python troubleshooting script used to
+reproduce and investigate integration issues.
+
+------------------------------------------------------------------------
+
 ## Overview
 
-This project simulates common API integration problems that developers
-encounter when connecting to external services.
+Many integration problems occur not because the API is unavailable, but
+because requests are malformed or authentication is incorrect. This lab
+simulates several common failure scenarios and demonstrates how they can
+be reproduced and diagnosed using typical developer and support tools.
 
-The lab demonstrates how to investigate and troubleshoot issues such as
-authentication failures, malformed payloads, and incorrect request
-headers.
-
-Rather than building a complex infrastructure project, the goal is to
-demonstrate a **structured troubleshooting workflow** similar to what an
-API platform support engineer or service analyst would perform when
-diagnosing customer integration issues.
+The goal is to provide a small, reproducible environment for practicing
+API troubleshooting workflows.
 
 ------------------------------------------------------------------------
 
-## Technologies Used
+## Requirements
 
--   Python
--   Flask
--   REST APIs
--   XML payloads
--   Postman
--   HTTP troubleshooting
--   Python `requests` library
-
-------------------------------------------------------------------------
-
-## Architecture
-
-Client (Postman / Python Script) \| HTTP Requests \| Flask API Server \|
-XML Validation + Authentication \| Response Codes (201 / 400 / 401)
+-   Python 3.10+
+-   pip
+-   Postman (optional, for manual testing)
 
 ------------------------------------------------------------------------
 
 ## Project Structure
 
-api-integration-troubleshooting-lab/
-
-api-server/ app.py
-
-python-tests/ api_test.py
-
-xml-examples/ valid-order.xml malformed-order.xml
-
-postman/
-
-screenshots/
-
-README.md
+    api-integration-troubleshooting-lab/
+    │
+    ├── api-server/
+    │   ├── app.py
+    │   └── requirements.txt
+    │
+    ├── python-tests/
+    │   └── api_test.py
+    │
+    ├── xml-examples/
+    │   ├── valid-order.xml
+    │   └── malformed-order.xml
+    │
+    ├── postman/
+    ├── screenshots/
+    └── README.md
 
 ------------------------------------------------------------------------
 
-# Troubleshooting Scenarios
+## Running the Lab
 
-## 1. Successful API Request
+Start the API server:
+
+``` bash
+cd api-server
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+In another terminal, run the troubleshooting script:
+
+``` bash
+python python-tests/api_test.py
+```
+
+------------------------------------------------------------------------
+
+## Architecture
+
+The API validates authentication headers, parses XML payloads, and
+returns appropriate HTTP status codes when errors occur.
+
+``` mermaid
+flowchart LR
+
+Client[Client - Postman / Python Script]
+--> API[Flask API Server]
+
+API --> Auth{API Key Valid?}
+
+Auth -->|No| Error401[401 Unauthorized]
+
+Auth -->|Yes| XML{XML Payload Valid?}
+
+XML -->|No| Error400[400 Bad Request]
+
+XML -->|Yes| Order[Create Order]
+
+Order --> Success[201 Created]
+```
+
+------------------------------------------------------------------------
+
+## Example Failure Scenarios
+
+### Successful Request
 
 Valid XML payload and authentication header.
 
-Expected result:
+Expected response:
 
-HTTP 201 Created
+    HTTP 201 Created
 
 Example response:
 
-`<OrderCreated>`{=html}`<OrderID>`{=html}...`</OrderID>`{=html}`</OrderCreated>`{=html}
+    <OrderCreated>
+      <OrderID>...</OrderID>
+    </OrderCreated>
 
 ------------------------------------------------------------------------
 
-## 2. Authentication Failure
+### Authentication Failure
 
 Request sent **without API key header**.
 
-Problem:
+Response:
 
-401 Unauthorized
+    401 Unauthorized
 
-Root cause:
+Cause:
 
 Missing authentication header.
 
-Resolution:
+Fix:
 
-Add the required header:
-
-X-API-Key: test-api-key-123
+    X-API-Key: test-api-key-123
 
 ------------------------------------------------------------------------
 
-## 3. Malformed XML Payload
+### Malformed XML Payload
 
 Broken XML payload sent to API.
 
-Problem:
+Response:
 
-400 Bad Request
+    400 Bad Request
+    Malformed XML
 
-Malformed XML
+Cause:
 
-Root cause:
-
-XML payload structure invalid.
-
-Resolution:
-
-Validate XML before submission.
+Invalid XML structure.
 
 ------------------------------------------------------------------------
 
-## 4. Incorrect Content-Type Header
+### Incorrect Content-Type
 
-Payload sent with wrong content type.
+Payload sent with the wrong header.
 
-Problem:
+Response:
 
-400 Bad Request\
-Content-Type must be application/xml
+    400 Bad Request
+    Content-Type must be application/xml
 
-Root cause:
+Cause:
 
 Incorrect request header.
 
-Resolution:
+------------------------------------------------------------------------
 
-Ensure request uses:
+## Example Requests
 
-Content-Type: application/xml
+### Successful Request (Postman)
+
+![Successful Request](screenshots/postman-success.png)
+
+### Authentication Failure
+
+![Auth Error](screenshots/postman-auth-error.png)
+
+### Python Troubleshooting Script
+
+![Python Script Output](screenshots/python-test-output.png)
 
 ------------------------------------------------------------------------
 
-# Key Skills Demonstrated
-
--   API integration troubleshooting
--   XML payload validation
--   HTTP request debugging
--   Authentication troubleshooting
--   Reproducing integration errors
--   Structured incident investigation
-
-------------------------------------------------------------------------
-
-# Future Improvements
+## Future Improvements
 
 Possible extensions:
 
--   OAuth authentication flow
+-   OAuth authentication support
 -   JSON API version
--   Logging and request tracing
+-   Request logging and tracing
 -   Containerised test environment
