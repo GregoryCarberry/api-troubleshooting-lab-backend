@@ -3,7 +3,7 @@
 ```mermaid
 flowchart LR
 
-A[Client - Postman / Python Script]
+A[Client - #40;Postman / Python Script#41;]
 --> B[HTTP Request]
 
 B --> C[Flask API Server]
