@@ -1,233 +1,169 @@
+
 # API Integration Troubleshooting Lab
 
-A small lab environment for reproducing and diagnosing common API
+A small backend API built with Flask that simulates common API
 integration failures such as authentication errors, malformed XML
 payloads, and incorrect request headers.
 
-This service acts as the **backend API** in the **API Troubleshooting
-Lab Series**, a small multi‑service environment designed to simulate
-real‑world API platform debugging and integration support workflows.
+This repository is part of the **API Troubleshooting Lab Series**, a
+multi-service environment designed to demonstrate real-world API
+integration debugging and platform support workflows.
 
-Companion project:
+Companion repository:
 
-API Gateway Troubleshooting Lab\
+API Gateway Troubleshooting Lab  
 https://github.com/GregoryCarberry/api-gateway-troubleshooting-lab
 
-------------------------------------------------------------------------
+---
 
-## Lab Series Architecture
+# Lab Series Architecture
 
-The backend API works together with the API Gateway project to simulate
-a simple API platform architecture.
+![API Troubleshooting Lab Series Architecture](docs/api-troubleshooting-lab-shared-architecture.svg)
 
-Client\
-│\
-▼\
-API Gateway (FastAPI)\
-│\
-▼\
-Backend API (Flask -- this repository)
+The backend API sits behind the gateway layer. The gateway handles
+platform-level concerns such as authentication, rate limiting and
+request tracing before forwarding requests to this backend service.
 
-The gateway provides:
+---
 
--   API key authentication
--   rate limiting
--   request tracing
--   gateway‑level error handling
+# Quick Start
 
-The backend API focuses on validating requests and reproducing common
-integration failures.
+1. Start the backend API
+2. Start the API Gateway
+3. Send requests via Postman or curl
+4. Reproduce troubleshooting scenarios
 
-------------------------------------------------------------------------
+---
 
-## Overview
+# What This Project Demonstrates
 
-Many integration problems occur not because the API is unavailable, but
-because requests are malformed or authentication is incorrect. This lab
-simulates several common failure scenarios and demonstrates how they can
-be reproduced and diagnosed using typical developer and support tools.
+This lab simulates **real-world API integration troubleshooting** rather
+than simple CRUD development.
 
-The goal is to provide a small, reproducible environment for practicing
-API troubleshooting workflows.
+Skills demonstrated:
 
-------------------------------------------------------------------------
+- diagnosing authentication failures
+- validating XML payloads
+- identifying incorrect request headers
+- tracing requests using correlation IDs
+- isolating gateway vs backend failures
+- analysing structured logs
 
-## Requirements
+---
 
--   Python 3.10+
--   pip
--   Postman (optional, for manual testing)
+# Failure Scenarios
 
-------------------------------------------------------------------------
+| Scenario | Layer | Response |
+|--------|--------|--------|
+| Missing API key | Gateway | 401 |
+| Invalid API key | Gateway | 403 |
+| Rate limit exceeded | Gateway | 429 |
+| Malformed XML | Backend | 400 |
+| Backend unavailable | Gateway | 502 |
+| Backend timeout | Gateway | 504 |
 
-## Project Structure
+---
 
-    api-integration-troubleshooting-lab/
-    │
-    ├── api-server/
-    │   ├── app.py
-    │   └── requirements.txt
-    │
-    ├── python-tests/
-    │   └── api_test.py
-    │
-    ├── xml-examples/
-    │   ├── valid-order.xml
-    │   └── malformed-order.xml
-    │
-    ├── postman/
-    ├── screenshots/
-    └── README.md
+# Troubleshooting Workflow Example
 
-------------------------------------------------------------------------
+Example debugging sequence:
 
-## Running the Lab
+Client request fails  
+↓  
+Gateway returns **502 Bad Gateway**  
+↓  
+Check gateway logs for **X-Request-ID**  
+↓  
+Trace the same request ID in backend logs  
+↓  
+Backend log reveals malformed XML payload  
+↓  
+Fix request payload and retry successfully
 
-Start the API server:
+---
 
-    cd api-server
+# Observability
+
+Requests include a correlation ID using the **X-Request-ID** header.
+
+The same ID appears in:
+
+- gateway logs
+- backend logs
+- HTTP responses
+
+This allows requests to be traced across services during troubleshooting.
+
+---
+
+# Repository Structure
+
+api-integration-troubleshooting-lab/
+
+├── app.py  
+├── requirements.txt  
+├── README.md  
+
+├── docs/  
+│   └── api-troubleshooting-lab-shared-architecture.svg  
+
+├── examples/  
+│   ├── valid-order.xml  
+│   └── malformed-order.xml  
+
+├── postman/  
+├── screenshots/  
+└── tests/  
+    └── api_test.py  
+
+---
+
+# Running the Backend API
+
+Create a virtual environment and install dependencies:
+
     python -m venv .venv
     source .venv/bin/activate
     pip install -r requirements.txt
+
+Start the API:
+
     python app.py
 
-In another terminal, run the troubleshooting script:
+Run troubleshooting tests:
 
-    python python-tests/api_test.py
+    python tests/api_test.py
 
-------------------------------------------------------------------------
+---
 
-## Architecture
+# Lab Exercises
 
-The API validates authentication headers, parses XML payloads, and
-returns appropriate HTTP status codes when errors occur.
+Example troubleshooting exercises:
 
-    Client
-       │
-       ▼
-    Flask API Server
-       │
-       ▼
-    Authentication Check
-       │
-       ├── Invalid → 401 Unauthorized
-       │
-       ▼
-    XML Validation
-       │
-       ├── Invalid → 400 Bad Request
-       │
-       ▼
-    Order Processing
-       │
-       ▼
-    201 Created
+- Diagnose a malformed XML payload
+- Identify a missing API key error
+- Trace a request using correlation IDs
+- Investigate backend log messages
 
-------------------------------------------------------------------------
+---
 
-## Example Failure Scenarios
+# System Design Notes
 
-### Successful Request
+The project intentionally separates the **gateway** and **backend**
+services into different repositories.
 
-Valid XML payload and authentication header.
+This reflects how real API platforms separate:
 
-Expected response:
+- platform infrastructure (authentication, rate limiting)
+- application logic (payload validation, business processing)
 
-    HTTP 201 Created
+---
 
-Example response:
-
-    <OrderCreated>
-      <OrderID>...</OrderID>
-    </OrderCreated>
-
-------------------------------------------------------------------------
-
-### Authentication Failure
-
-Request sent **without API key header**.
-
-Response:
-
-    401 Unauthorized
-
-Cause:
-
-Missing authentication header.
-
-Fix:
-
-    X-API-Key: test-api-key-123
-
-------------------------------------------------------------------------
-
-### Malformed XML Payload
-
-Broken XML payload sent to API.
-
-Response:
-
-    400 Bad Request
-    Malformed XML
-
-Cause:
-
-Invalid XML structure.
-
-------------------------------------------------------------------------
-
-### Incorrect Content-Type
-
-Payload sent with the wrong header.
-
-Response:
-
-    400 Bad Request
-    Content-Type must be application/xml
-
-Cause:
-
-Incorrect request header.
-
-------------------------------------------------------------------------
-
-## Example Requests
-
-### Successful Request (Postman)
-
-![Successful Request](screenshots/postman-success.png)
-
-### Authentication Failure
-
-![Auth Error](screenshots/postman-auth-error.png)
-
-### Python Troubleshooting Script
-
-![Python Script Output](screenshots/python-test-output.png)
-
-------------------------------------------------------------------------
-
-## Example Server Logs
-
-When running the API locally, request lifecycle events are logged with a
-request ID to help trace individual requests during troubleshooting.
-
-Example:
-
-    2026-03-06 22:47:31 [INFO] [request_id=3f2c1f8a] Incoming request: POST /api/orders
-    2026-03-06 22:47:31 [INFO] [request_id=3f2c1f8a] Authentication successful
-    2026-03-06 22:47:31 [INFO] [request_id=3f2c1f8a] Order created successfully: 6e7c...
-
-The `X-Request-ID` header returned in responses allows a specific
-request to be correlated with its server-side logs.
-
-------------------------------------------------------------------------
-
-## Future Improvements
+# Future Improvements
 
 Possible extensions:
 
--   OAuth authentication support
--   JSON API version
--   request tracing integration with gateway logs
--   containerised test environment
+- OAuth authentication support
+- JSON API support
+- distributed tracing integration
+- containerised test environment
