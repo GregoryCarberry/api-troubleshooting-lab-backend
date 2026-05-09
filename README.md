@@ -1,12 +1,12 @@
 # Backend API (Flask)
 
-This service is the backend component of the API Troubleshooting Lab. It is responsible for processing XML-based requests, validating input, simulating failures, and providing structured logging to support debugging and observability.
+This service is the backend component of the API Troubleshooting Lab. It is responsible for processing XML-based order requests, validating input, simulating failures, and providing structured logging to support debugging and observability.
 
 ## Overview
 
 The backend is intentionally designed to mimic a real-world service that:
 
-- accepts structured input (XML)
+- accepts structured input using XML
 - validates requests and returns meaningful errors
 - simulates downstream failures
 - supports request tracing across services
@@ -18,7 +18,7 @@ It is consumed by the API Gateway, which handles authentication, rate limiting, 
 ## Responsibilities
 
 - XML request parsing and validation
-- business logic simulation (order handling)
+- order-processing simulation
 - failure simulation for testing resilience
 - structured logging
 - request ID propagation for tracing
@@ -27,25 +27,33 @@ It is consumed by the API Gateway, which handles authentication, rate limiting, 
 
 ## Request Flow
 
-1. Request received (typically via gateway)
+1. Request received, typically via the gateway
 2. `X-Request-ID` extracted or generated
 3. XML payload parsed and validated
-4. Failure mode applied (if specified)
-5. Response returned with appropriate status code
+4. Failure mode applied if specified
+5. Response returned with the appropriate status code
 
 ---
 
-## Failure Modes
+## Expected XML Payload
 
-The backend supports controlled failure simulation via the `X-Failure-Mode` header.
+A valid order request uses the following structure:
 
-| Mode        | Behaviour                  | Status |
-|-------------|---------------------------|--------|
-| timeout     | Simulated delay           | 504    |
-| dependency  | Downstream failure        | 503    |
-| exception   | Internal error            | 500    |
+```xml
+<Order>
+  <CustomerID>12345</CustomerID>
+  <ProductID>ABC123</ProductID>
+  <Quantity>2</Quantity>
+</Order>
+```
 
-This allows consistent reproduction of failure scenarios for testing and troubleshooting.
+Required fields:
+
+| Field | Description |
+|---|---|
+| `CustomerID` | Customer identifier for the order |
+| `ProductID` | Product identifier for the requested item |
+| `Quantity` | Positive integer quantity |
 
 ---
 
@@ -55,15 +63,32 @@ The API enforces strict validation:
 
 - valid XML structure required
 - required fields must be present
-- numeric fields must be valid
+- required fields must not be empty
+- `Quantity` must be a positive integer
 
 Common responses:
 
-| Scenario              | Status |
-|----------------------|--------|
-| malformed XML        | 400    |
-| missing fields       | 422    |
-| invalid values       | 422    |
+| Scenario | Status |
+|---|---|
+| malformed XML | 400 |
+| missing fields | 422 |
+| empty required fields | 422 |
+| invalid quantity | 422 |
+| unsupported content type | 415 |
+
+---
+
+## Failure Modes
+
+The backend supports controlled failure simulation via the `X-Failure-Mode` header.
+
+| Mode | Behaviour | Status |
+|---|---|---|
+| `timeout` | Simulated delay | 504 |
+| `dependency` | Simulated upstream/downstream dependency failure | 503 |
+| `exception` | Simulated internal backend error | 500 |
+
+This allows consistent reproduction of failure scenarios for testing and troubleshooting.
 
 ---
 
@@ -84,14 +109,17 @@ This enables:
 
 ---
 
-## Example Payload
+## Example Successful Response
+
+A valid request returns an XML response similar to:
 
 ```xml
-<Order>
-  <Item>Widget</Item>
-  <Quantity>2</Quantity>
-</Order>
+<OrderCreated>
+  <OrderID>generated-order-id</OrderID>
+</OrderCreated>
 ```
+
+The exact order ID is generated at runtime.
 
 ---
 
@@ -121,9 +149,10 @@ The API Gateway provides:
 - authentication
 - rate limiting
 - request routing
+- upstream timeout handling
 - unified entry point
 
-The backend focuses purely on service logic and failure handling.
+The backend focuses purely on service logic, validation, failure simulation, and trace-aware responses.
 
 ---
 
