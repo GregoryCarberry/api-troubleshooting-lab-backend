@@ -1,5 +1,5 @@
-<Purchase>
+<Order>
   <CustomerID>12345</CustomerID>
-  <ProductID>ABC123</ProductID>
+  <ProductID></ProductID>
   <Quantity>2</Quantity>
-</Purchase>
+</Order>
