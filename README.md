@@ -15,6 +15,96 @@ It is consumed by the API Gateway, which handles authentication, rate limiting, 
 
 ---
 
+## Quick Start
+
+From the backend repository root:
+
+```bash
+cd ~/api-troubleshooting-lab/api-troubleshooting-lab-backend
+```
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Start the backend service:
+
+```bash
+python app.py
+```
+
+By default, the backend runs on:
+
+```text
+http://127.0.0.1:5000
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:5000/health
+```
+
+Expected response:
+
+```text
+ok
+```
+
+---
+
+## Local Test Request
+
+Send a valid order directly to the backend:
+
+```bash
+curl -i -X POST http://127.0.0.1:5000/api/orders \
+  -H "Content-Type: application/xml" \
+  --data-binary @examples/valid-order.xml
+```
+
+Expected successful response:
+
+```http
+HTTP/1.1 201 CREATED
+```
+
+```xml
+<OrderCreated><OrderID>generated-order-id</OrderID></OrderCreated>
+```
+
+The exact order ID is generated at runtime.
+
+---
+
+## Running the Full Lab
+
+For normal end-to-end testing, run both services:
+
+1. Start the backend on `http://127.0.0.1:5000`
+2. Start the gateway on `http://127.0.0.1:8000`
+3. Send client requests to the gateway, not directly to the backend
+
+Normal client entry point:
+
+```text
+POST http://127.0.0.1:8000/orders
+```
+
+Direct backend testing is useful for isolating backend validation and failure behaviour, but the gateway is the intended external entry point for the full troubleshooting lab.
+
+---
+
 ## Responsibilities
 
 - XML request parsing and validation
@@ -32,6 +122,16 @@ It is consumed by the API Gateway, which handles authentication, rate limiting, 
 3. XML payload parsed and validated
 4. Failure mode applied if specified
 5. Response returned with the appropriate status code
+
+---
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Backend health check |
+| `POST` | `/api/orders` | Create an order from XML payload |
+| `GET` | `/api/orders/<order_id>` | Retrieve an order from the in-memory store |
 
 ---
 
@@ -90,6 +190,15 @@ The backend supports controlled failure simulation via the `X-Failure-Mode` head
 
 This allows consistent reproduction of failure scenarios for testing and troubleshooting.
 
+Example:
+
+```bash
+curl -i -X POST http://127.0.0.1:5000/api/orders \
+  -H "Content-Type: application/xml" \
+  -H "X-Failure-Mode: dependency" \
+  --data-binary @examples/valid-order.xml
+```
+
 ---
 
 ## Observability
@@ -106,6 +215,15 @@ This enables:
 - correlation with gateway logs
 - end-to-end request tracing
 - easier debugging of failures
+
+To pass a known request ID during direct backend testing:
+
+```bash
+curl -i -X POST http://127.0.0.1:5000/api/orders \
+  -H "Content-Type: application/xml" \
+  -H "X-Request-ID: backend-demo-001" \
+  --data-binary @examples/valid-order.xml
+```
 
 ---
 
@@ -136,6 +254,12 @@ Run tests:
 
 ```bash
 pytest -q
+```
+
+If `pytest` is not installed in the virtual environment, install it before running the test suite:
+
+```bash
+python -m pip install pytest
 ```
 
 ---
